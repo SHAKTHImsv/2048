@@ -1,5 +1,17 @@
 // Filename: script.js 
 // Get the game grid 
+
+// Make web page able to listen to keydown event 
+document.addEventListener("keydown", moveBlocks); 
+
+// Prevent page refresh on certain key presses
+document.addEventListener("keydown", function(e) {
+    // Check for F5 or Ctrl + R
+    if (e.key === "F5" || (e.ctrlKey && e.key === "r")) {
+        e.preventDefault(); // Prevent the default refresh action
+    }
+});
+
 const gridItems = [ 
 	...document.querySelectorAll(".grid-item"), 
 ]; 
