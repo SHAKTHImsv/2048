@@ -354,3 +354,101 @@ function updateColors() {
 		} 
 	} 
 } 
+// Add these variables at the top of your script.js file
+let touchStartX, touchStartY, touchEndX, touchEndY;
+
+// Add touch event listeners
+document.addEventListener("touchstart", handleTouchStart, false);
+document.addEventListener("touchend", handleTouchEnd, false);
+
+// Handle touch start event
+function handleTouchStart(e) {
+    touchStartX = e.changedTouches[0].clientX;
+    touchStartY = e.changedTouches[0].clientY;
+}
+
+// Handle touch end event
+function handleTouchEnd(e) {
+    touchEndX = e.changedTouches[0].clientX;
+    touchEndY = e.changedTouches[0].clientY;
+    handleSwipe();
+}
+
+// Handle swipe direction
+function handleSwipe() {
+    const deltaX = touchEndX - touchStartX;
+    const deltaY = touchEndY - touchStartY;
+    
+    // Determine if it was a horizontal or vertical swipe
+    if (Math.abs(deltaX) > Math.abs(deltaY)) {
+        // Horizontal swipe
+        if (deltaX > 0) {
+            // Swipe Right
+            moveBlocks({ key: "ArrowRight" });
+        } else {
+            // Swipe Left
+            moveBlocks({ key: "ArrowLeft" });
+        }
+    } else {
+        // Vertical swipe
+        if (deltaY > 0) {
+            // Swipe Down
+            moveBlocks({ key: "ArrowDown" });
+        } else {
+            // Swipe Up
+            moveBlocks({ key: "ArrowUp" });
+        }
+    }
+}
+// Add this function in your script.js
+function restartGame() {
+    score = 0; // Reset score
+    moves = 0; // Reset moves
+    score_val.innerText = score; // Update score display
+    result.innerText = ""; // Clear result message
+    matrix = []; // Reset matrix
+    prevMatrix = null; // Clear previous matrix
+
+    // Recreate the grid
+    let row = [];
+    for (let index = 1; index < gridItems.length + 1; index++) {
+        if (index % 4 === 0) {
+            let item = gridItems[index - 1];
+            item.firstElementChild.innerText = "";
+            row.push(item);
+            matrix.push(row);
+            row = [];
+        } else {
+            let item = gridItems[index - 1];
+            item.firstElementChild.innerText = "";
+            row.push(item);
+        }
+    }
+
+    // Assign initial values
+    initializeGame();
+}
+
+// Initialize the game
+function initializeGame() {
+    const rowIdx = Math.floor(Math.random() * 4);
+    const colIdx = Math.floor(Math.random() * 4);
+    let rowIdx2 = Math.floor(Math.random() * 4);
+    let colIdx2 = Math.floor(Math.random() * 4);
+
+    if (rowIdx === rowIdx2 && colIdx === colIdx2) {
+        rowIdx2 = Math.floor(Math.random() * 4);
+        colIdx2 = Math.floor(Math.random() * 4);
+    }
+
+    matrix[rowIdx][colIdx].firstElementChild.textContent = 2;
+    matrix[rowIdx2][colIdx2].firstElementChild.textContent = 2;
+
+    updateColors(); // Update colors after resetting
+}
+
+// Add this event listener after your existing event listeners
+document.querySelector(".restart-button").addEventListener("click", restartGame);
+
+// Call initializeGame() initially to set up the game
+initializeGame();
