@@ -1,160 +1,356 @@
-const board = document.getElementById('board');
-const scoreDisplay = document.getElementById('score');
-const resetButton = document.getElementById('reset');
-let score = 0;
-let tiles = Array(16).fill(null); // Initialize a 4x4 grid
+// Filename: script.js 
+// Get the game grid 
+const gridItems = [ 
+	...document.querySelectorAll(".grid-item"), 
+]; 
+const score_val = document.querySelector(".score-value"); 
+const result = document.querySelector(".result"); 
+let score = 0; 
+let moves = 0; 
+let moveFactor = 4; 
+let options = [ 
+	2, 4, 8, 2, 4, 8, 2, 2, 4, 4, 2, 8, 2, 2, 4, 4, 2, 
+]; 
+let matrix = []; 
+let prevMatrix; 
 
-// Initialize the game
-function initGame() {
-    score = 0;
-    scoreDisplay.textContent = score;
-    tiles.fill(null); // Reset the tiles
-    generateTile();
-    generateTile();
-    updateBoard();
-}
+let colors = [ 
+	"#caf0f8", 
+	"#90e0ef", 
+	"#00b4d8", 
+	"#0077b6", 
+	"#03045e", 
+	"#023047", 
+	"#fca311", 
+	"#14213d", 
+	"#e63946", 
+	"#ffc300", 
+	"#6a040f", 
+	"#000000", 
+]; 
 
-// Generate a new tile (2 or 4) in a random empty position
-function generateTile() {
-    const emptyIndices = tiles.map((tile, index) => (tile === null ? index : null)).filter(index => index !== null);
-    if (emptyIndices.length === 0) return; // No empty space
-    const randomIndex = emptyIndices[Math.floor(Math.random() * emptyIndices.length)];
-    tiles[randomIndex] = Math.random() < 0.9 ? 2 : 4; // 90% chance for 2
-}
+// Create the starting game grid. 
+let row = []; 
+for (let index = 1; index < gridItems.length + 1; index++) { 
+	if (index % 4 === 0) { 
+		let item = gridItems[index - 1]; 
+		item.firstElementChild.innerText = ""; 
+		row.push(item); 
+		matrix.push(row); 
+		row = []; 
+	} else { 
+		let item = gridItems[index - 1]; 
+		item.firstElementChild.innerText = ""; 
+		row.push(item); 
+	} 
+} 
 
-// Update the board display
-function updateBoard() {
-    board.innerHTML = '';
-    tiles.forEach((value) => {
-        const tileDiv = document.createElement('div');
-        tileDiv.className = 'tile ' + (value ? 'x' + value : '');
-        tileDiv.textContent = value !== null ? value : '';
-        board.appendChild(tileDiv);
-    });
-    scoreDisplay.textContent = score;
-}
+// Assign any two grid blocks the value of 2 
+const rowIdx = Math.floor(Math.random() * 4); 
+const colIdx = Math.floor(Math.random() * 4); 
+let rowIdx2 = Math.floor(Math.random() * 4); 
+let colIdx2 = Math.floor(Math.random() * 4); 
 
-// Reset the game
-resetButton.addEventListener('click', initGame);
+if (rowIdx === rowIdx2 && colIdx === colIdx2) { 
+	rowIdx2 = Math.floor(Math.random() * 4); 
+	colIdx2 = Math.floor(Math.random() * 4); 
+} 
 
-// Handle keyboard input
-document.addEventListener('keydown', handleKeyDown);
+matrix[rowIdx][colIdx].firstElementChild.textContent = 2; 
+matrix[rowIdx2][colIdx2].firstElementChild.textContent = 2; 
 
-// Handle swipe events for mobile
-let touchStartX = 0;
-let touchStartY = 0;
+let availIndexes = updateAvailIndexes(); 
 
-board.addEventListener('touchstart', (event) => {
-    touchStartX = event.touches[0].clientX;
-    touchStartY = event.touches[0].clientY;
-});
+updateColors(); 
 
-board.addEventListener('touchend', (event) => {
-    const touchEndX = event.changedTouches[0].clientX;
-    const touchEndY = event.changedTouches[0].clientY;
+// Make web page able to listen to keydown event 
+document.addEventListener("keydown", moveBlocks); 
 
-    const deltaX = touchEndX - touchStartX;
-    const deltaY = touchEndY - touchStartY;
+// Method to extract columns from an 2D array. 
+const arrayColumn = (arr, n) => arr.map((x) => x[n]); 
 
-    let moved = false;
+function moveBlocks(e) { 
+	if ( 
+		e.key !== "ArrowLeft" && 
+		e.key !== "ArrowRight" && 
+		e.key !== "ArrowUp" && 
+		e.key !== "ArrowDown"
+	) { 
+		return; 
+	} 
 
-    if (Math.abs(deltaX) > Math.abs(deltaY)) {
-        moved = deltaX > 0 ? moveRight() : moveLeft();
-    } else {
-        moved = deltaY > 0 ? moveDown() : moveUp();
-    }
+	moves++; 
+	matrixVals = getCurrentMatrixValues(); 
+	prevMatrix = matrixVals; 
 
-    if (moved) {
-        generateTile(); // Generate a new tile only if a move occurred
-        updateBoard(); // Update the display
-    }
-});
+	let col1 = arrayColumn(matrix, 0); 
+	let col2 = arrayColumn(matrix, 1); 
+	let col3 = arrayColumn(matrix, 2); 
+	let col4 = arrayColumn(matrix, 3); 
+	let row1 = matrix[0]; 
+	let row2 = matrix[1]; 
+	let row3 = matrix[2]; 
+	let row4 = matrix[3]; 
 
-// Handle keyboard input for desktop
-function handleKeyDown(event) {
-    let moved = false;
-    if (event.key === 'ArrowUp') {
-        moved = moveUp();
-    } else if (event.key === 'ArrowDown') {
-        moved = moveDown();
-    } else if (event.key === 'ArrowLeft') {
-        moved = moveLeft();
-    } else if (event.key === 'ArrowRight') {
-        moved = moveRight();
-    }
+	if (e.key === "ArrowLeft") { 
+		moveLeft(row1); 
+		moveLeft(row2); 
+		moveLeft(row3); 
+		moveLeft(row4); 
+	} 
+	if (e.key === "ArrowRight") { 
+		moveRight(row1); 
+		moveRight(row2); 
+		moveRight(row3); 
+		moveRight(row4); 
+	} 
+	if (e.key === "ArrowUp") { 
+		moveLeft(col1); 
+		moveLeft(col2); 
+		moveLeft(col3); 
+		moveLeft(col4); 
+	} 
+	if (e.key === "ArrowDown") { 
+		moveRight(col1); 
+		moveRight(col2); 
+		moveRight(col3); 
+		moveRight(col4); 
+	} 
 
-    if (moved) {
-        generateTile(); // Generate a new tile only if a move occurred
-        updateBoard(); // Update the display
-    }
-}
+	matrixVals = getCurrentMatrixValues(); 
+	availIndexes = updateAvailIndexes(); 
+	updateColors(); 
 
-// Move tiles up
-function moveUp() {
-    return moveOrMerge(0, 4, 1); // Start from the top of each column
-}
+	let check = checkMatrixEquality(prevMatrix, matrixVals); 
 
-// Move tiles down
-function moveDown() {
-    return moveOrMerge(12, -4, -1); // Start from the bottom of each column
-}
+	if (availIndexes.length === 0 && check === true) { 
+		gameOver("loose"); 
+	} 
 
-// Move tiles left
-function moveLeft() {
-    return moveOrMerge(0, 1, 4); // Start from the left of each row
-}
+	if (moves % moveFactor === 0) { 
+		generateNewBlock(); 
+	} 
+} 
 
-// Move tiles right
-function moveRight() {
-    return moveOrMerge(3, 1, -4); // Start from the right of each row
-}
+setInterval(() => { 
+	availIndexes = updateAvailIndexes(); 
+	generateNewBlock(); 
+}, 8000); 
 
-// Move and merge tiles based on the direction
-function moveOrMerge(startIndex, step, limit) {
-    let moved = false;
+setTimeout(() => { 
+	options.push(16); 
+	setTimeout(() => { 
+		options.push(16); 
+		options.push(32); 
+		setTimeout(() => { 
+			options.push(16); 
+			options.push(32); 
+			options.push(64); 
+		}, 40000); 
+	}, 18000); 
+}, 120000); 
 
-    for (let i = 0; i < 4; i++) {
-        const row = [];
-        for (let j = 0; j < 4; j++) {
-            const index = startIndex + i * step + j * (step === 1 ? 1 : 0);
-            if (tiles[index]) row.push(tiles[index]);
-        }
+function getCurrentMatrixValues() { 
+	let gridItems = [ 
+		...document.querySelectorAll(".grid-item"), 
+	]; 
+	let matrix_grid = []; 
+	let row = []; 
+	for ( 
+		let index = 1; 
+		index < gridItems.length + 1; 
+		index++ 
+	) { 
+		if (index % 4 === 0) { 
+			let item = gridItems[index - 1]; 
+			row.push(item.firstElementChild.innerText); 
+			matrix_grid.push(row); 
+			row = []; 
+		} else { 
+			let item = gridItems[index - 1]; 
+			row.push(item.firstElementChild.innerText); 
+		} 
+	} 
+	return matrix_grid; 
+} 
 
-        const newRow = mergeTiles(row);
-        for (let j = 0; j < 4; j++) {
-            const index = startIndex + i * step + j * (step === 1 ? 1 : 0);
-            if (tiles[index] !== newRow[j]) moved = true;
-            tiles[index] = newRow[j] || null;
-        }
-    }
-    return moved;
-}
+function shiftLeft(arr) { 
+	for (let i = 0; i < 4; i++) { 
+		for (let i = 1; i < 4; i++) { 
+			let currElement = arr[i].firstElementChild; 
+			let prevElement = arr[i - 1].firstElementChild; 
+			if (prevElement.innerText == 0) { 
+				prevElement.innerText = 
+					currElement.innerText; 
+				currElement.innerText = ""; 
+			} 
+		} 
+	} 
+} 
 
-// Merge tiles in a row/column
-function mergeTiles(row) {
-    const merged = [];
-    let skip = false;
+function shiftRight(arr) { 
+	for (let i = 0; i < 4; i++) { 
+		for (let i = 2; i >= 0; i--) { 
+			let currElement = arr[i].firstElementChild; 
+			let nextElement = arr[i + 1].firstElementChild; 
+			if (nextElement.innerText == 0) { 
+				nextElement.innerText = 
+					currElement.innerText; 
+				currElement.innerText = ""; 
+			} 
+		} 
+	} 
+} 
 
-    for (let i = 0; i < row.length; i++) {
-        if (skip) {
-            skip = false;
-            continue;
-        }
+function moveRight(row) { 
+	shiftRight(row); 
 
-        if (row[i] === row[i + 1]) {
-            merged.push(row[i] * 2);
-            score += row[i] * 2; // Update score
-            skip = true; // Skip the next tile
-        } else {
-            merged.push(row[i]);
-        }
-    }
+	for (let i = 2; i >= 0; i--) { 
+		let currElement = row[i].firstElementChild; 
+		let nextElement = row[i + 1].firstElementChild; 
+		let val = parseInt(currElement.innerText); 
+		let nextVal = parseInt(nextElement.innerText); 
+		if (val === nextVal && val !== 0) { 
+			let newVal = val + nextVal; 
+			nextElement.innerText = newVal; 
+			currElement.innerText = ""; 
+			score = score + 2; 
+			score_val.innerText = score; 
+			if (newVal === 2048) { 
+				gameOver("Win"); 
+			} 
+		} 
+	} 
 
-    while (merged.length < 4) {
-        merged.push(null); // Fill with nulls to maintain the row length
-    }
-    return merged;
-}
+	shiftRight(row); 
+} 
 
-// Start the game
-initGame();
+function moveLeft(row) { 
+	shiftLeft(row); 
+
+	for (let i = 1; i < 4; i++) { 
+		let currElement = row[i].firstElementChild; 
+		let prevElement = row[i - 1].firstElementChild; 
+		let val = parseInt(currElement.innerText); 
+		let prevVal = parseInt(prevElement.innerText); 
+		if (val === prevVal && val !== 0) { 
+			let newVal = val + prevVal; 
+			prevElement.innerText = newVal; 
+			currElement.innerText = ""; 
+			score = score + 2; 
+			score_val.innerText = score; 
+			if (newVal === 2048) { 
+				gameOver("Win"); 
+			} 
+		} 
+	} 
+
+	shiftLeft(row); 
+} 
+
+function updateAvailIndexes() { 
+	matrixValues = getCurrentMatrixValues(); 
+	let grid = []; 
+	for (let i = 0; i < 4; i++) { 
+		for (let j = 0; j < 4; j++) { 
+			if (matrixValues[i][j] == "") { 
+				grid.push([i, j]); 
+			} 
+		} 
+	} 
+	return grid; 
+} 
+
+function generateNewBlock() { 
+	if (availIndexes.length !== 0) { 
+		let randInt = Math.floor( 
+			Math.random() * availIndexes.length 
+		); 
+		let coords = availIndexes[randInt]; 
+		let randInt3 = Math.floor( 
+			Math.random() * options.length 
+		); 
+		let ele = 
+			matrix[coords[0]][coords[1]].firstElementChild; 
+		ele.innerText = options[randInt3]; 
+		updateColors(); 
+	} 
+} 
+
+function checkMatrixEquality(mat1, mat2) { 
+	for (let i = 0; i < 4; i++) { 
+		for (let j = 0; j < 4; j++) { 
+			if (mat1[i][j] !== mat2[i][j]) { 
+				return false; 
+			} 
+		} 
+	} 
+	return true; 
+} 
+
+function gameOver(status) { 
+	if (status === "Win") { 
+		result.innerText = "You Won!!!"; 
+		result.style.color = "rgb(78, 236, 144)"; 
+	} else { 
+		result.innerText = "You Loose!!!"; 
+		result.style.color = "rgb(252, 51, 51)"; 
+	} 
+} 
+
+function updateColors() { 
+	for (let i = 0; i < 4; i++) { 
+		for (let j = 0; j < 4; j++) { 
+			let elem = matrix[i][j].firstElementChild; 
+			if (elem.innerText == 0) { 
+				elem.parentElement.style.backgroundColor = 
+					colors[0]; 
+				elem.style.color = "black"; 
+			} else if (elem.innerText == 2) { 
+				elem.style.color = "black"; 
+				elem.parentElement.style.backgroundColor = 
+					colors[1]; 
+			} else if (elem.innerText == 4) { 
+				elem.style.color = "black"; 
+				elem.parentElement.style.backgroundColor = 
+					colors[2]; 
+			} else if (elem.innerText == 8) { 
+				elem.style.color = "black"; 
+				elem.parentElement.style.backgroundColor = 
+					colors[3]; 
+			} else if (elem.innerText == 16) { 
+				elem.style.color = "white"; 
+				elem.parentElement.style.backgroundColor = 
+					colors[4]; 
+			} else if (elem.innerText == 32) { 
+				elem.style.color = "white"; 
+				elem.parentElement.style.backgroundColor = 
+					colors[5]; 
+			} else if (elem.innerText == 64) { 
+				elem.style.color = "white"; 
+				elem.parentElement.style.backgroundColor = 
+					colors[6]; 
+			} else if (elem.innerText == 128) { 
+				elem.style.color = "white"; 
+				elem.parentElement.style.backgroundColor = 
+					colors[7]; 
+			} else if (elem.innerText == 256) { 
+				elem.style.color = "white"; 
+				elem.parentElement.style.backgroundColor = 
+					colors[8]; 
+			} else if (elem.innerText == 512) { 
+				elem.style.color = "white"; 
+				elem.parentElement.style.backgroundColor = 
+					colors[9]; 
+			} else if (elem.innerText == 1024) { 
+				elem.style.color = "white"; 
+				elem.parentElement.style.backgroundColor = 
+					colors[10]; 
+			} else if (elem.innerText == 2048) { 
+				elem.style.color = "white"; 
+				elem.parentElement.style.backgroundColor = 
+					colors[11]; 
+			} 
+		} 
+	} 
+} 
